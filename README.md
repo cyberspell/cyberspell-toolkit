@@ -18,20 +18,20 @@ Windows is the focus today. Linux and macOS branches are stubbed in and planned.
 
 ## Run it (the one-liner)
 
-Launch straight from the repo — one line, nothing to install:
+Launch it anywhere — one line, nothing to install:
 
 ```powershell
-irm https://raw.githubusercontent.com/cyberspell/cyberspell-toolkit/main/dist/toolkit.ps1 | iex
+irm https://cyberspell.cloud/toolkit | iex
 ```
 
 That downloads the compiled single-file build and runs it in memory. Read-only diagnostics
 work in any session; run from an **Administrator** PowerShell/Terminal to unlock the
 state-changing repair tasks.
 
-Short on-brand URL (served by a Cloudflare Worker):
+Direct-from-GitHub fallback (always available, pinnable to a release tag):
 
 ```powershell
-irm https://cyberspell.cloud/toolkit | iex
+irm https://raw.githubusercontent.com/cyberspell/cyberspell-toolkit/main/dist/toolkit.ps1 | iex
 ```
 
 ---
@@ -225,7 +225,6 @@ then run `Compile.ps1`.
   BitLocker, memory diagnostics, and Exchange-relay / SMTP test tasks.
 - Self-elevation for `irm | iex` sessions (relaunch elevated, WinUtil-style).
 - Linux and macOS category trees.
-- Cloudflare Worker deployment for `irm cyberspell.cloud/toolkit | iex`.
 
 ---
 
