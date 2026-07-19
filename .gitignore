@@ -1,0 +1,14 @@
+# Editor / OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local logs
+*.log
+
+# NOTE: dist/ is intentionally NOT ignored.
+# The compiled dist/toolkit.ps1 is committed on purpose — it's the file the
+#  `irm .../dist/toolkit.ps1 | iex` one-liner downloads. Regenerate it with
+# .\build\Compile.ps1 before each release/commit.
