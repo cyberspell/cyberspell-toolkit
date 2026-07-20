@@ -5,8 +5,13 @@
  // endpoint troubleshooting toolkit
 ```
 
-A single-command, terminal-based (TUI) toolkit for **Windows endpoint troubleshooting** —
-from everyday checks to deeper diagnostics — that wraps the CMD/PowerShell commands you
+![Version](https://img.shields.io/badge/version-0.1.0-00f0ff?style=flat-square)
+![PowerShell](https://img.shields.io/badge/PowerShell-5.1%20%7C%207%2B-ff2da0?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Windows-00f0ff?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-ff2da0?style=flat-square)
+
+A single-command, terminal-based (TUI) toolkit for **Windows endpoint troubleshooting**
+from everyday checks to deeper diagnostics. that wraps the CMD/PowerShell commands you
 already run by hand into a clean, categorized, keyboard-driven menu.
 
 Windows is the focus today. Linux and macOS branches are stubbed in and planned.
@@ -38,7 +43,7 @@ irm https://raw.githubusercontent.com/cyberspell/cyberspell-toolkit/main/dist/to
 
 ## Run it locally (development)
 
-No build step needed while hacking on it — the dev launcher dot-sources the modular source
+No build step needed while hacking on it, the dev launcher dot-sources the modular source
 in the right order and starts the app:
 
 ```powershell
@@ -64,7 +69,7 @@ To produce/refresh the single-file build that the one-liner serves:
 - **Colors:** 24-bit truecolor ANSI. Virtual-terminal support is auto-detected and enabled
   (Windows Terminal & PS7 already have it; legacy 5.1 conhost is switched on via a small
   kernel32 call). If the terminal can't do ANSI, output **degrades gracefully to plain
-  text** — it never prints raw escape codes.
+  text** it never prints raw escape codes.
 - **Keys:** single-keypress navigation where supported, with a `Read-Host` fallback when
   input is redirected.
 
@@ -99,7 +104,7 @@ home
 ```
 
 Navigation: number/letter keys select an item; **[B]** back, **[R]** refresh, **[Q]** quit.
-While a task is running, **[ESC]** (or **X**) stops it and returns to the menu — long
+While a task is running, **[ESC]** (or **X**) stops it and returns to the menu, long
 operations like SFC, DISM, or folder scans no longer hold you hostage. (Tasks that
 prompt for input run uninterrupted so your typing is never stolen.)
 (Those three letters are reserved, so selectable items are keyed `1`–`9` then `A`–`Z`
@@ -113,7 +118,7 @@ Two ideas keep this maintainable as the command library grows:
 
 **1. Modular source, compiled to one file.**
 You develop against small files under `src/`. A build step concatenates them, in a fixed
-load order, into a single self-contained `dist/toolkit.ps1` — that's the file the
+load order, into a single self-contained `dist/toolkit.ps1` - that's the file the
 `irm | iex` one-liner runs. (Same model WinUtil uses.)
 
 ```
@@ -133,7 +138,7 @@ dist/toolkit.ps1              # compiled single-file build (committed; served by
 
 **2. The menu is data, not code.**
 Every category and command is a **node** (a hashtable). A generic engine renders and
-navigates them. Adding functionality means adding nodes — you don't touch the UI or the
+navigates them. Adding functionality means adding nodes, you don't touch the UI or the
 loop.
 
 ---
@@ -186,8 +191,8 @@ A node is just a hashtable. Two kinds:
 | `Label` | string | Menu text (required) |
 | `Desc` | string | Short description shown beside the label |
 | `Type` | `'menu'` \| `'action'` | Branch or runnable command (required) |
-| `Items` | node[] | Children — **menu nodes only** |
-| `Action` | scriptblock | What runs — **action nodes only** |
+| `Items` | node[] | Children **menu nodes only** |
+| `Action` | scriptblock | What runs **action nodes only** |
 | `Admin` | bool | Requires elevation; tagged in the menu and blocked if not elevated |
 | `Confirm` | bool | Prompt y/N before running |
 | `Warning` | string | Shown before the confirm prompt for risky operations |
@@ -230,7 +235,7 @@ then run `Compile.ps1`.
 
 ## "The file is not digitally signed" / execution policy errors
 
-You'll only ever see this when running the **files** locally — never with the one-liner.
+You'll only ever see this when running the **files** locally, never with the one-liner.
 `irm <url> | iex` executes the script from memory, so execution policy is not consulted
 at all; that's the supported way to launch the toolkit.
 
@@ -240,19 +245,30 @@ browser-downloaded zip are tagged as "remote", and the common `RemoteSigned` pol
 refuses unsigned remote-tagged scripts. Three clean fixes, pick one:
 
 ```powershell
-# 1. Remove the mark once (from the repo root) — permanent fix for that copy:
+# 1. Remove the mark once (from the repo root), permanent fix for that copy:
 Get-ChildItem -Recurse | Unblock-File
 
 # 2. Or use the launcher shims, which bypass policy for just that process:
 .\Start-Dev.cmd        # dev run (modular src/)
 .\Run-Toolkit.cmd      # run the compiled dist build
 
-# 3. Or clone with git instead of downloading a zip — git-written files
+# 3. Or clone with git instead of downloading a zip, git-written files
 #    never carry the Mark of the Web:
 git clone https://github.com/cyberspell/cyberspell-toolkit.git
 ```
 
 Don't lower machine-wide policy for this; none of the above touches your system settings.
+
+---
+
+## Engineer
+
+**JP** > IT engineer, homelabber, cybersecurity enthusiast.
+
+- Web: [jp.cyberspell.cloud](https://jp.cyberspell.cloud)
+- GitHub: [@cyberspell](https://github.com/cyberspell)
+
+Found it useful? A star on the repo helps other engineers find it.
 
 ---
 
@@ -264,4 +280,6 @@ Cyberspell Toolkit runs standard Windows administrative commands. Use it on syst
 responsible for. Review what an action does before confirming it, especially the ones
 marked as requiring a restart or elevation. No warranty.
 
-*a [cyberspell](https://jp.cyberspell.cloud) project*
+---
+
+<p align="center"><b>created with ♥ by JP</b> — for all my fellow IT engineers</p>

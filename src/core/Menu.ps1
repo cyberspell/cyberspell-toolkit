@@ -131,4 +131,6 @@ function Show-Goodbye {
     Write-Host ("  " + (Paint "$($script:Glyph.bolt) cyberspell toolkit " 'cyan' -Bold) + (Paint "// session closed" 'magenta'))
     Write-Host ("  " + (Paint "logs: $(Get-LogPath)" 'dim'))
     Write-Host ""
+    Write-Host ("  " + (Paint "created with $([char]0x2665) by $($script:App.Author)" 'magenta') + (Paint " - for all my fellow IT engineers" 'dim'))
+    Write-Host ""
 }

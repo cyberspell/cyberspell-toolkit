@@ -25,6 +25,7 @@ $sb = New-Object System.Text.StringBuilder
 [void]$sb.AppendLine('#  Cyberspell Toolkit  --  compiled build (do not edit; edit src/ instead)')
 [void]$sb.AppendLine("#  built: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 [void]$sb.AppendLine('#  cyberspell // https://github.com/cyberspell/cyberspell-toolkit')
+[void]$sb.AppendLine('#  created with <3 by JP (https://jp.cyberspell.cloud) - for all my fellow IT engineers')
 [void]$sb.AppendLine('# =====================================================================')
 [void]$sb.AppendLine('')
 

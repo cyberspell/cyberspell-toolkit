@@ -1,7 +1,8 @@
 # =====================================================================
 #  Cyberspell Toolkit  --  compiled build (do not edit; edit src/ instead)
-#  built: 2026-07-19 12:17:44
+#  built: 2026-07-19 09:54:52
 #  cyberspell // https://github.com/cyberspell/cyberspell-toolkit
+#  created with <3 by JP (https://jp.cyberspell.cloud) - for all my fellow IT engineers
 # =====================================================================
 
 # ----- src\config\Theme.ps1 -----
@@ -715,6 +716,8 @@ function Show-Goodbye {
     Write-Host ""
     Write-Host ("  " + (Paint "$($script:Glyph.bolt) cyberspell toolkit " 'cyan' -Bold) + (Paint "// session closed" 'magenta'))
     Write-Host ("  " + (Paint "logs: $(Get-LogPath)" 'dim'))
+    Write-Host ""
+    Write-Host ("  " + (Paint "created with $([char]0x2665) by $($script:App.Author)" 'magenta') + (Paint " - for all my fellow IT engineers" 'dim'))
     Write-Host ""
 }
 
@@ -2028,6 +2031,8 @@ $script:App = @{
     Banner  = 'Cyberspell'                # big banner title (spaced caps)
     Tagline = 'endpoint troubleshooting toolkit'
     Brand   = 'cyberspell'
+    Author  = 'JP'
+    Site    = 'https://jp.cyberspell.cloud'
     Version = '0.1.0'
     Repo    = 'https://github.com/cyberspell/cyberspell-toolkit'
 }
@@ -2038,6 +2043,7 @@ function Get-AboutNode {
         Label = 'About'; Desc = 'version, links, disclaimer'; Type = 'action'
         Action = {
             Write-Kv 'Name'     "$($script:App.Name)  v$($script:App.Version)"
+            Write-Kv 'Author'   "$($script:App.Author)  ($($script:App.Site))"
             Write-Kv 'By'       $script:App.Brand
             Write-Kv 'Repo'     $script:App.Repo
             Write-Kv 'Logs'     (Get-LogPath)
@@ -2047,6 +2053,8 @@ function Get-AboutNode {
             Write-Host (Paint "  A menu-driven wrapper around standard Windows" 'dim')
             Write-Host (Paint "  troubleshooting commands. Read-only tasks are safe;" 'dim')
             Write-Host (Paint "  state-changing tasks always ask for confirmation." 'dim')
+            Write-Host ""
+            Write-Host ("  " + (Paint "created with $([char]0x2665) by $($script:App.Author)" 'magenta' -Bold) + (Paint " - for all my fellow IT engineers" 'dim'))
         }
     }
 }
