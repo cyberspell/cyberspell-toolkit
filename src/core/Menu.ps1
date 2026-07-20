@@ -6,7 +6,7 @@
 # Single-key pool for item selection: digits 1-9, then letters
 # EXCLUDING B / Q / R (reserved for Back / Quit / Refresh).
 $script:KeyPool = @('1','2','3','4','5','6','7','8','9') + `
-    ([char[]]('A'..'Z') | Where-Object { $_ -notin @('B','Q','R') } | ForEach-Object { [string]$_ })
+    (65..90 | ForEach-Object { [string][char]$_ } | Where-Object { $_ -notin @('B', 'Q', 'R') })
 
 # ---------------------------------------------------------------------
 #  New-KeyMap  --  assign selection keys to a node's items

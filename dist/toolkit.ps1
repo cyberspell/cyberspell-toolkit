@@ -1,6 +1,6 @@
 # =====================================================================
 #  Cyberspell Toolkit  --  compiled build (do not edit; edit src/ instead)
-#  built: 2026-07-20 11:17:32
+#  built: 2026-07-20 12:35:50
 #  cyberspell // https://github.com/cyberspell/cyberspell-toolkit
 #  created with <3 by JP (https://jp.cyberspell.cloud) - for all my fellow IT engineers
 # =====================================================================
@@ -591,7 +591,7 @@ function Show-ActionHeader {
 # Single-key pool for item selection: digits 1-9, then letters
 # EXCLUDING B / Q / R (reserved for Back / Quit / Refresh).
 $script:KeyPool = @('1','2','3','4','5','6','7','8','9') + `
-    ([char[]]('A'..'Z') | Where-Object { $_ -notin @('B','Q','R') } | ForEach-Object { [string]$_ })
+    (65..90 | ForEach-Object { [string][char]$_ } | Where-Object { $_ -notin @('B', 'Q', 'R') })
 
 # ---------------------------------------------------------------------
 #  New-KeyMap  --  assign selection keys to a node's items
