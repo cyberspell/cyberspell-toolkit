@@ -263,7 +263,7 @@ Don't lower machine-wide policy for this; none of the above touches your system 
 
 ## Author
 
-**JP** — IT engineer, homelabber, cyberpunk enthusiast.
+**JP** — IT engineer, homelabber, cybersecurity enthusiast.
 
 - Web: [jp.cyberspell.cloud](https://jp.cyberspell.cloud)
 - GitHub: [@cyberspell](https://github.com/cyberspell)
