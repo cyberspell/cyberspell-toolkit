@@ -75,7 +75,7 @@ function Show-Banner {
     $top = "$($g.tl)$([string]$g.h * $inner)$($g.tr)"
     $bot = "$($g.bl)$([string]$g.h * $inner)$($g.br)"
 
-    # Title line:  ' ⚡ C Y B E R S P E L L                 v0.1.0 '
+    # Title line:  ' ⚡ C Y B E R S P E L L                 v0.1.1 '
     $bannerTitle = $script:App.Banner
     if (-not $bannerTitle) { $bannerTitle = $script:App.Name }
     $name    = ($bannerTitle.ToUpper().ToCharArray() -join ' ')

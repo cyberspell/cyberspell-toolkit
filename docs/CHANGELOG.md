@@ -3,6 +3,19 @@
 All notable changes to Cyberspell Toolkit are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com); versions follow SemVer.
 
+## [0.1.1] — 2026-07-19
+
+Release polish. This is the tagged first-release build.
+
+### Added
+- Authorship & credits: About screen and quit screen now sign off with
+  "created with ♥ by JP — for all my fellow IT engineers"; author header in the
+  compiled build; README author section, badges, and footer.
+- Standard project files: SECURITY.md, CONTRIBUTING.md.
+
+### Fixed
+- Corrected author site domain (jp.cyberspell.cloud).
+
 ## [0.1.0] — 2026-07-19
 
 First public release. 🚀

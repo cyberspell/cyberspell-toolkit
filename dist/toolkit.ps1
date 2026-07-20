@@ -1,6 +1,6 @@
 # =====================================================================
 #  Cyberspell Toolkit  --  compiled build (do not edit; edit src/ instead)
-#  built: 2026-07-19 09:54:52
+#  built: 2026-07-20 09:48:26
 #  cyberspell // https://github.com/cyberspell/cyberspell-toolkit
 #  created with <3 by JP (https://jp.cyberspell.cloud) - for all my fellow IT engineers
 # =====================================================================
@@ -83,7 +83,7 @@ function Show-Banner {
     $top = "$($g.tl)$([string]$g.h * $inner)$($g.tr)"
     $bot = "$($g.bl)$([string]$g.h * $inner)$($g.br)"
 
-    # Title line:  ' ⚡ C Y B E R S P E L L                 v0.1.0 '
+    # Title line:  ' ⚡ C Y B E R S P E L L                 v0.1.1 '
     $bannerTitle = $script:App.Banner
     if (-not $bannerTitle) { $bannerTitle = $script:App.Name }
     $name    = ($bannerTitle.ToUpper().ToCharArray() -join ' ')
@@ -107,7 +107,6 @@ function Show-Banner {
     Write-Host (Paint $g.v 'cyan')
     Write-Host (Paint $bot 'cyan')
 }
-
 
 # ----- src\core\Utils.ps1 -----
 # =====================================================================
@@ -720,7 +719,6 @@ function Show-Goodbye {
     Write-Host ("  " + (Paint "created with $([char]0x2665) by $($script:App.Author)" 'magenta') + (Paint " - for all my fellow IT engineers" 'dim'))
     Write-Host ""
 }
-
 
 # ----- src\modules\windows\Windows.ps1 -----
 # =====================================================================
@@ -2093,6 +2091,5 @@ function Start-App {
     $root = Get-MenuTree
     Start-Menu -Root $root
 }
-
 
 Start-App
