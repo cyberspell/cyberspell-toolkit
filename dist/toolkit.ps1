@@ -1,6 +1,6 @@
 # =====================================================================
 #  Cyberspell Toolkit  --  compiled build (do not edit; edit src/ instead)
-#  built: 2026-07-20 09:48:26
+#  built: 2026-07-20 11:17:32
 #  cyberspell // https://github.com/cyberspell/cyberspell-toolkit
 #  created with <3 by JP (https://jp.cyberspell.cloud) - for all my fellow IT engineers
 # =====================================================================
@@ -2031,7 +2031,7 @@ $script:App = @{
     Brand   = 'cyberspell'
     Author  = 'JP'
     Site    = 'https://jp.cyberspell.cloud'
-    Version = '0.1.0'
+    Version = '0.1.1'
     Repo    = 'https://github.com/cyberspell/cyberspell-toolkit'
 }
 

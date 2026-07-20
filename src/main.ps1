@@ -15,7 +15,7 @@ $script:App = @{
     Brand   = 'cyberspell'
     Author  = 'JP'
     Site    = 'https://jp.cyberspell.cloud'
-    Version = '0.1.0'
+    Version = '0.1.1'
     Repo    = 'https://github.com/cyberspell/cyberspell-toolkit'
 }
 

@@ -10,8 +10,8 @@
 ![Platform](https://img.shields.io/badge/platform-Windows-00f0ff?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-ff2da0?style=flat-square)
 
-A single-command, terminal-based (TUI) toolkit for **Windows endpoint troubleshooting** —
-from everyday checks to deeper diagnostics — that wraps the CMD/PowerShell commands you
+A single-command, terminal-based (TUI) toolkit for **Windows endpoint troubleshooting** 
+from everyday checks to deeper diagnostics, that wraps the CMD/PowerShell commands you
 already run by hand into a clean, categorized, keyboard-driven menu.
 
 Windows is the focus today. Linux and macOS branches are stubbed in and planned.
