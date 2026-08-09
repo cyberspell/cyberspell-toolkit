@@ -77,6 +77,38 @@ function Show-Breadcrumb {
     Write-Host ("  " + ($parts -join $chev))
 }
 
+# =====================================================================
+#  STATUS STATES
+#  Every screen in the toolkit sets one of these, so the bottom row
+#  always says what the current keys are. Set-StatusIdle remembers the
+#  hint, so anything that temporarily shows a busy state can restore the
+#  previous one without knowing what it was.
+# =====================================================================
+$script:StatusKeys = @{
+    Root   = '[1-9/a-z] select    [r] refresh    [q] quit'
+    Menu   = '[1-9/a-z] select    [b] back    [r] refresh    [q] quit'
+    Action = '[any key] continue'
+    Finder = 'type to filter    [up/dn] move    [enter] copy    [esc] back'
+    Prompt = '[left/right] choose    [enter] confirm    [y/n] decide'
+}
+
+function Set-StatusIdle {
+    param([string]$Keys)
+    if ($PSBoundParameters.ContainsKey('Keys') -and $Keys -ne '') {
+        $script:Screen.Keys = $Keys
+    }
+    $brand = "$($script:App.Name) v$($script:App.Version)"
+    Write-StatusBar -Left (Paint $script:Screen.Keys 'dim') -Right (Paint $brand 'magentaDim')
+}
+
+function Set-StatusBusy {
+    param([int]$Pos, [long]$Ms, [string]$Label = 'RUNNING')
+    $bar = Get-ActivityFrame -Pos $Pos -Width 18
+    $left = (Paint '[' 'magenta' -Bold) + $bar + (Paint ']' 'magenta' -Bold) +
+            (Paint ("  $Label  ") 'magenta' -Bold) + (Paint (Format-Duration $Ms) 'cyan' -Bold)
+    Write-StatusBar -Left $left -Right (Paint '[esc] stop task' 'warn' -Bold)
+}
+
 # ---------------------------------------------------------------------
 #  Show-Footer  --  keybind hints
 # ---------------------------------------------------------------------
@@ -133,7 +165,13 @@ function Show-MenuScreen {
 
     Write-Host ""
     Write-Rule
-    Show-Footer -IsRoot:$IsRoot
+    if ($script:Screen.Enabled) {
+        $keys = $script:StatusKeys.Menu
+        if ($IsRoot) { $keys = $script:StatusKeys.Root }
+        Set-StatusIdle -Keys $keys
+    } else {
+        Show-Footer -IsRoot:$IsRoot
+    }
     Write-Host ""
     $prompt = Paint "  $($script:Glyph.arrow) select" 'cyan' -Bold
     Write-Host "$prompt " -NoNewline

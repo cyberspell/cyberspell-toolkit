@@ -450,8 +450,57 @@ function Get-WinSystemMenu {
 # =====================================================================
 function Get-WinDiskMenu {
     @{
-        Label = 'Disk & storage'; Desc = 'space, health, cleanup, chkdsk'; Type = 'menu'
+        Label = 'Disk & storage'; Desc = 'temp cleanup, space, health, chkdsk'; Type = 'menu'
         Items = @(
+            @{
+                Label = 'Clear user TEMP'; Desc = 'purge %TEMP% for the current user'; Type = 'action'
+                Confirm = $true
+                Warning = 'Deletes the contents of your user TEMP folder. Files locked by running apps are skipped automatically, and the toolkit''s own log folder is preserved.'
+                Action = {
+                    $t = $env:TEMP
+                    if (-not $t -or -not (Test-Path $t)) {
+                        Write-Host (Paint "  TEMP folder not found." 'err'); return
+                    }
+                    $before = (Get-ChildItem $t -Recurse -Force -ErrorAction SilentlyContinue |
+                        Measure-Object Length -Sum -ErrorAction SilentlyContinue).Sum
+                    Get-ChildItem $t -Force -ErrorAction SilentlyContinue |
+                        Where-Object { $_.Name -ne 'cyberspell' } |
+                        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                    $after = (Get-ChildItem $t -Recurse -Force -ErrorAction SilentlyContinue |
+                        Measure-Object Length -Sum -ErrorAction SilentlyContinue).Sum
+                    if ($null -eq $before) { $before = 0 }
+                    if ($null -eq $after)  { $after = 0 }
+                    $freed = [math]::Max(0, [math]::Round(($before - $after) / 1MB, 1))
+                    Write-Kv 'path'  $t 'cyanDim'
+                    Write-Kv 'freed' ("{0} MB" -f $freed) 'ok'
+                    Write-Host ""
+                    Write-Host (Paint "  Locked files were skipped - that is normal and safe." 'dim')
+                }
+            },
+            @{
+                Label = 'Clear system TEMP'; Desc = 'purge C:\Windows\Temp (machine-wide)'; Type = 'action'
+                Admin = $true; Confirm = $true
+                Warning = 'Deletes the contents of C:\Windows\Temp. Files in use by Windows or services are skipped automatically.'
+                Action = {
+                    $t = Join-Path $env:SystemRoot 'Temp'
+                    if (-not (Test-Path $t)) {
+                        Write-Host (Paint "  $t not found." 'err'); return
+                    }
+                    $before = (Get-ChildItem $t -Recurse -Force -ErrorAction SilentlyContinue |
+                        Measure-Object Length -Sum -ErrorAction SilentlyContinue).Sum
+                    Get-ChildItem $t -Force -ErrorAction SilentlyContinue |
+                        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                    $after = (Get-ChildItem $t -Recurse -Force -ErrorAction SilentlyContinue |
+                        Measure-Object Length -Sum -ErrorAction SilentlyContinue).Sum
+                    if ($null -eq $before) { $before = 0 }
+                    if ($null -eq $after)  { $after = 0 }
+                    $freed = [math]::Max(0, [math]::Round(($before - $after) / 1MB, 1))
+                    Write-Kv 'path'  $t 'cyanDim'
+                    Write-Kv 'freed' ("{0} MB" -f $freed) 'ok'
+                    Write-Host ""
+                    Write-Host (Paint "  Locked files were skipped - that is normal and safe." 'dim')
+                }
+            },
             @{
                 Label = 'Drive space'; Desc = 'free space per volume'; Type = 'action'
                 Action = {
@@ -499,7 +548,7 @@ function Get-WinDiskMenu {
                 Label = 'CHKDSK scan (read-only)'; Desc = 'inspect C: without repairing'; Type = 'action'
                 Admin = $true; Confirm = $true
                 Warning = 'Read-only scan of C:. Makes NO changes but can take several minutes.'
-                Action = { chkdsk C: }
+                Action = { Invoke-Native 'chkdsk.exe' @('C:') }
             },
             @{
                 Label = 'Disk Cleanup (launch)'; Desc = 'open the cleanmgr utility'; Type = 'action'
@@ -582,36 +631,36 @@ function Get-WinRepairMenu {
             @{
                 Label = 'SFC verify (no repair)'; Desc = 'check system files, change nothing'; Type = 'action'
                 Admin = $true
-                Action = { sfc /verifyonly }
+                Action = { Invoke-Native 'sfc.exe' @('/verifyonly') }
             },
             @{
                 Label = 'SFC scan & repair'; Desc = 'sfc /scannow'; Type = 'action'
                 Admin = $true; Confirm = $true
                 Warning = 'Scans and repairs protected system files. Can take 10-30 minutes - do not close the window.'
-                Action = { sfc /scannow }
+                Action = { Invoke-Native 'sfc.exe' @('/scannow') }
             },
             @{
                 Label = 'DISM check health'; Desc = 'quick component-store flag check'; Type = 'action'
                 Admin = $true
-                Action = { dism /online /cleanup-image /checkhealth }
+                Action = { Invoke-Native 'dism.exe' @('/online', '/cleanup-image', '/checkhealth') }
             },
             @{
                 Label = 'DISM scan health'; Desc = 'deeper scan (read-only, slower)'; Type = 'action'
                 Admin = $true; Confirm = $true
                 Warning = 'Read-only but can take 10-20 minutes.'
-                Action = { dism /online /cleanup-image /scanhealth }
+                Action = { Invoke-Native 'dism.exe' @('/online', '/cleanup-image', '/scanhealth') }
             },
             @{
                 Label = 'DISM restore health'; Desc = 'repair the component store'; Type = 'action'
                 Admin = $true; Confirm = $true
                 Warning = 'Repairs the Windows image, downloading files from Windows Update if needed. Can take a LONG time. Typical order: run this, then SFC /scannow.'
-                Action = { dism /online /cleanup-image /restorehealth }
+                Action = { Invoke-Native 'dism.exe' @('/online', '/cleanup-image', '/restorehealth') }
             },
             @{
                 Label = 'Component store cleanup'; Desc = 'reclaim WinSxS space'; Type = 'action'
                 Admin = $true; Confirm = $true
                 Warning = 'Cleans up superseded components. Safe, but can take a while and older updates can no longer be uninstalled.'
-                Action = { dism /online /cleanup-image /startcomponentcleanup }
+                Action = { Invoke-Native 'dism.exe' @('/online', '/cleanup-image', '/startcomponentcleanup') }
             },
             @{
                 Label = 'List restore points'; Desc = 'available System Restore snapshots'; Type = 'action'
@@ -1144,7 +1193,7 @@ function Get-WinQuickLaunchMenu {
 # =====================================================================
 function Get-WinIdentityMenu {
     @{
-        Label = 'Enterprise & identity'; Desc = 'domain, Entra ID join, GPO, Kerberos, Intune'; Type = 'menu'
+        Label = 'Enterprise & identity'; Desc = 'domain, Entra ID join, GPO, time, Intune'; Type = 'menu'
         Items = @(
             @{
                 Label = 'Device join status (dsregcmd)'; Desc = 'AD / Entra ID / hybrid join + PRT state'; Type = 'action'
@@ -1201,24 +1250,7 @@ function Get-WinIdentityMenu {
                 Label = 'Force Group Policy update'; Desc = 'gpupdate /force'; Type = 'action'
                 Confirm = $true
                 Warning = 'Re-applies all computer and user policies now. Some policies may prompt for logoff/reboot (you can answer N).'
-                Action = { gpupdate /force }
-            },
-            @{
-                Label = 'Kerberos tickets'; Desc = 'klist - current ticket cache'; Type = 'action'
-                Action = {
-                    klist
-                    Write-Host ""
-                    Write-Host (Paint "  No krbtgt ticket on a domain network = auth problems." 'dim')
-                }
-            },
-            @{
-                Label = 'Purge Kerberos tickets'; Desc = 'klist purge - fixes stale-auth weirdness'; Type = 'action'
-                Confirm = $true
-                Warning = 'Clears the Kerberos ticket cache for this logon session. Access to shares/apps re-authenticates on next use; lock/unlock afterwards helps.'
-                Action = {
-                    klist purge
-                    Write-Host (Paint "  Ticket cache purged. Lock/unlock the session (Win+L) to refresh cleanly." 'ok')
-                }
+                Action = { Invoke-Native 'gpupdate.exe' @('/force') }
             },
             @{
                 Label = 'Time sync status'; Desc = 'w32tm - skew breaks Kerberos (>5 min)'; Type = 'action'
@@ -1254,7 +1286,7 @@ function Get-WinIdentityMenu {
                 Warning = 'Collects enrollment/Autopilot/policy diagnostics into a zip on your Desktop. Takes a minute or two.'
                 Action = {
                     $zip = Join-Path ([Environment]::GetFolderPath('Desktop')) ("MDMDiag-{0:yyyyMMdd-HHmm}.zip" -f (Get-Date))
-                    mdmdiagnosticstool.exe -area 'DeviceEnrollment;DeviceProvisioning;Autopilot' -zip $zip
+                    Invoke-Native 'mdmdiagnosticstool.exe' @('-area', 'DeviceEnrollment;DeviceProvisioning;Autopilot', '-zip', $zip)
                     if (Test-Path $zip) {
                         Write-Host (Paint "  Report written: $zip" 'ok' -Bold)
                     } else {
@@ -1284,6 +1316,7 @@ function Get-WindowsMenu {
             (Get-WinAccountsMenu),
             (Get-WinAppsMenu),
             (Get-WinIdentityMenu),
+            (Get-WinCheatSheetMenu),
             (Get-WinQuickLaunchMenu)
         )
     }

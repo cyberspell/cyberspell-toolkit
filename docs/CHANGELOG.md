@@ -3,6 +3,61 @@
 All notable changes to Cyberspell Toolkit are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com); versions follow SemVer.
 
+## [0.1.2] — 2026-08-04
+
+### Added
+- **Command finder** — a new Windows entry holding 407 commands across 20 groups (files,
+  disk, network, services, registry, DISM/servicing, Windows Update, boot & recovery,
+  events, printing, remoting, scripting, virtualization/WSL and more), each with a
+  one-line description. It opens as a single fzf-style pane: type to filter, arrows to
+  move, `Enter` copies the highlighted command to the clipboard, `Esc` leaves. Matching
+  is literal-first with a fuzzy fallback, so `dns` returns only DNS commands while
+  `ipcfg` still finds `ipconfig`. With an empty query the whole list browses grouped by
+  category. Lives in its own source file, `src/modules/windows/CheatSheet.ps1`.
+- **Live output from console tools** — `sfc`, `dism`, `chkdsk`, `gpupdate` and the MDM
+  diagnostics collector now run through a new `Invoke-Native` helper that leaves their
+  output completely unredirected. They print live to the console exactly as they do at a
+  prompt, including in-place progress such as "Verification 42% complete". Previously
+  these were piped, and tools that buffer when their output is captured showed nothing at
+  all until they finished.
+- **Persistent status line** — the bottom row of the window is now reserved with a
+  terminal scrolling region (DECSTBM) and owned by a small screen engine. It always shows
+  the keys available on the current screen, and during a task it becomes a neon scanner
+  with live elapsed time and a stop hint, returning to the key hints the moment the task
+  ends. Because output scrolls in the region above it, the line can never be overwritten
+  by output and can never bleed into it - including against tools like `sfc` that redraw
+  with carriage returns. Cursor save/restore uses `ESC 7`/`ESC 8` rather than the SCO
+  `CSI s`/`CSI u` pair, which some terminals ignore; ignoring it would strand the cursor
+  on the reserved row and send all following output there. The whole layer degrades to
+  no-ops without ANSI, falling back to the previous inline footer.
+- **Yes/No confirmation selector** — confirmations now highlight **Yes** by default.
+  Arrow keys (or Tab) move the selection and `Enter` accepts it; `y` and `n` still decide
+  instantly and `Esc` cancels. Applies everywhere confirmations are used.
+- **Readable durations** — elapsed times are formatted as `3.2s` or `3m 49s` instead of
+  raw milliseconds.
+- **TEMP cleanup** — Disk & storage gains "Clear user TEMP" and "Clear system TEMP"
+  (elevated), both confirmation-gated, reporting how much was freed. Locked files are
+  skipped and the toolkit's own log folder is preserved.
+- **Single-source versioning** — the version now lives only in `src/main.ps1`. The build
+  reads it, stamps the compiled header, and syncs the README badge automatically.
+
+### Fixed
+- `Paint` threw when handed an empty string, because a mandatory `[string]` parameter
+  rejects `''`. Any caller painting a computed or padded value that happened to be empty
+  would fail. It now accepts empty strings and returns early.
+- The command finder no longer assigns to `$matches`, which is a PowerShell automatic
+  variable that any `-match` operation can overwrite.
+- The finder's clipboard copy now tries `Set-Clipboard`, then `clip.exe`, then the
+  WinForms clipboard, and reports which route succeeded instead of failing quietly.
+
+### Build
+- The compiler now fails the build if a required internal function is called but never
+  defined, or is defined more than once. A missing helper is not a parse error, so a build
+  could previously succeed and then break at runtime the first time that code path ran.
+
+### Removed
+- Kerberos ticket list/purge actions (out of scope for now).
+
 ## [0.1.1] — 2026-07-19
 
 Release polish. This is the tagged first-release build.

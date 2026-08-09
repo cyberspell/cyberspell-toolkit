@@ -91,16 +91,153 @@ function Write-Log {
 }
 
 # ---------------------------------------------------------------------
-#  Confirm-Action  --  Y/N prompt (default No unless -DefaultYes)
+#  Get-ActivityFrame  --  one frame of the neon scanner shown while a
+#  task is still silent. A bright cyan core with a glow that fades
+#  through cyan into magenta, over a dim track.
+# ---------------------------------------------------------------------
+function Get-ActivityFrame {
+    param([int]$Pos, [int]$Width = 22)
+    $core = [char]0x2588   # full block
+    $g3   = [char]0x2593   # dark shade
+    $g2   = [char]0x2592   # medium shade
+    $g1   = [char]0x2591   # light shade
+    $out = ''
+    for ($i = 0; $i -lt $Width; $i++) {
+        $d = $Pos - $i
+        if ($d -lt 0) { $d = -$d }
+        if ($d -eq 0) {
+            $out += (Paint ([string]$core) 'cyan' -Bold)
+        } elseif ($d -eq 1) {
+            $out += (Paint ([string]$g3) 'cyan')
+        } elseif ($d -eq 2) {
+            $out += (Paint ([string]$g2) 'cyanDim')
+        } elseif ($d -eq 3) {
+            $out += (Paint ([string]$g1) 'magentaDim')
+        } else {
+            $out += (Paint ([string]$g1) 'dim')
+        }
+    }
+    return $out
+}
+
+# ---------------------------------------------------------------------
+#  Format-Duration  --  readable elapsed time: "500 ms", "3.2s",
+#  "3m 49s". Used by the activity bar and the task result line.
+# ---------------------------------------------------------------------
+function Format-Duration {
+    param([long]$Ms)
+    if ($Ms -lt 1000) { return ("{0} ms" -f $Ms) }
+    $totalSec = [int][math]::Round($Ms / 1000.0, 0)
+    if ($totalSec -lt 60) { return ("{0:N1}s" -f ($Ms / 1000.0)) }
+    $m = [int][math]::Floor($totalSec / 60)
+    $s = [int]($totalSec % 60)
+    return ("{0}m {1:d2}s" -f $m, $s)
+}
+
+# ---------------------------------------------------------------------
+#  Confirm-Action  --  Yes/No selector, Yes highlighted by default.
+#    left / right / up / down / tab  move the selection
+#    enter                           accepts what is highlighted
+#    y / n                           decide instantly
+#    esc                             no
+#  Redraws in place with a carriage return, so it works in legacy
+#  conhost as well as Windows Terminal. Falls back to Read-Host when
+#  console input is redirected.
 # ---------------------------------------------------------------------
 function Confirm-Action {
-    param([string]$Prompt = 'Proceed?', [switch]$DefaultYes)
-    $hint = if ($DefaultYes) { '[Y/n]' } else { '[y/N]' }
+    param([string]$Prompt = 'Proceed?', [switch]$DefaultNo)
+
+    $sel = 0                          # 0 = Yes, 1 = No
+    if ($DefaultNo) { $sel = 1 }
+
+    $canKey = $true
+    try { if ([Console]::IsInputRedirected) { $canKey = $false } } catch { $canKey = $false }
+
+    if (-not $canKey) {
+        Write-Host ""
+        $hint = '[Y/n]'
+        if ($DefaultNo) { $hint = '[y/N]' }
+        Write-Host (Paint "  ? $Prompt $hint " 'warn' -Bold) -NoNewline
+        $ans = (Read-Host).Trim().ToLower()
+        if ([string]::IsNullOrEmpty($ans)) { return (-not $DefaultNo) }
+        return ($ans -eq 'y' -or $ans -eq 'yes')
+    }
+
     Write-Host ""
-    Write-Host (Paint "  ? $Prompt $hint " 'warn' -Bold) -NoNewline
-    $ans = (Read-Host).Trim().ToLower()
-    if ([string]::IsNullOrEmpty($ans)) { return [bool]$DefaultYes }
-    return ($ans -eq 'y' -or $ans -eq 'yes')
+    Set-StatusIdle -Keys $script:StatusKeys.Prompt
+    $decided = $false
+    $result  = (-not $DefaultNo)
+
+    while (-not $decided) {
+        $yesCell = '  Yes  '
+        $noCell  = '  No   '
+        if ($sel -eq 0) { $yesCell = '[ Yes ]' } else { $noCell = '[ No  ]' }
+
+        $yesPaint = Paint $yesCell 'dim'
+        $noPaint  = Paint $noCell  'dim'
+        if ($sel -eq 0) { $yesPaint = Paint $yesCell 'cyan' -Bold }
+        else            { $noPaint  = Paint $noCell  'magenta' -Bold }
+
+        $line = "`r" + (Paint "  ? $Prompt   " 'warn' -Bold) + $yesPaint + '  ' + $noPaint +
+                (Paint '    arrows or y/n, enter confirms' 'dim')
+        Write-Host $line -NoNewline
+
+        $k = $null
+        try { $k = [Console]::ReadKey($true) } catch { $decided = $true; break }
+        $ch = ([string]$k.KeyChar).ToLower()
+
+        if ($ch -eq 'y')                 { $sel = 0; $result = $true;  $decided = $true }
+        elseif ($ch -eq 'n')             { $sel = 1; $result = $false; $decided = $true }
+        elseif ($k.Key -eq 'Enter')      { $result = ($sel -eq 0);     $decided = $true }
+        elseif ($k.Key -eq 'Escape')     { $sel = 1; $result = $false; $decided = $true }
+        elseif ($k.Key -eq 'LeftArrow' -or $k.Key -eq 'UpArrow')    { $sel = 0 }
+        elseif ($k.Key -eq 'RightArrow' -or $k.Key -eq 'DownArrow') { $sel = 1 }
+        elseif ($k.Key -eq 'Tab')        { if ($sel -eq 0) { $sel = 1 } else { $sel = 0 } }
+        # anything else: ignore and keep waiting
+    }
+
+    # Repaint the final state so the scrollback shows what was chosen.
+    $yesCell = '  Yes  '; $noCell = '  No   '
+    if ($result) { $yesCell = '[ Yes ]' } else { $noCell = '[ No  ]' }
+    $yesPaint = Paint $yesCell 'dim'; $noPaint = Paint $noCell 'dim'
+    if ($result) { $yesPaint = Paint $yesCell 'ok' -Bold } else { $noPaint = Paint $noCell 'magenta' -Bold }
+    Write-Host ("`r" + (Paint "  ? $Prompt   " 'warn' -Bold) + $yesPaint + '  ' + $noPaint + (' ' * 34))
+    return $result
+}
+
+# ---------------------------------------------------------------------
+#  Invoke-Native  --  run a console tool with NOTHING redirected.
+#  Its output goes straight to the console, live and byte for byte,
+#  including in-place progress like "Verification 42% complete".
+#  This matters because sfc, dism and chkdsk buffer their output (or
+#  print nothing at all) when it is captured by a PowerShell pipeline,
+#  so these tools must never be piped.
+#  Sets $LASTEXITCODE; deliberately returns nothing so no stray value
+#  is printed after the tool's own output.
+# ---------------------------------------------------------------------
+function Invoke-Native {
+    param(
+        [Parameter(Mandatory)][string]$Exe,
+        [string[]]$Arguments = @()
+    )
+    if (-not (Get-Command $Exe -ErrorAction SilentlyContinue)) {
+        Write-Host (Paint "  '$Exe' was not found on this system." 'err' -Bold)
+        $global:LASTEXITCODE = 1
+        return
+    }
+    $p = $null
+    try {
+        if ($Arguments -and $Arguments.Count -gt 0) {
+            $p = Start-Process -FilePath $Exe -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+        } else {
+            $p = Start-Process -FilePath $Exe -NoNewWindow -Wait -PassThru
+        }
+    } catch {
+        Write-Host (Paint "  Could not start '$Exe': $($_.Exception.Message)" 'err')
+        $global:LASTEXITCODE = 1
+        return
+    }
+    if ($p) { $global:LASTEXITCODE = $p.ExitCode }
 }
 
 # ---------------------------------------------------------------------
@@ -127,7 +264,8 @@ function Test-ActionCancellable {
 function Get-RunnerPreamble {
     if ($script:RunnerPreamble) { return $script:RunnerPreamble }
     $fns = @('Paint', 'Get-VisibleLength', 'Write-Kv', 'Write-Rule',
-             'Get-LogPath', 'Write-Log', 'Test-PendingReboot', 'Show-PendingRebootReport')
+             'Get-LogPath', 'Write-Log', 'Test-PendingReboot', 'Show-PendingRebootReport',
+             'Invoke-Native', 'Format-Duration', 'Get-ActivityFrame')
     $sb = New-Object System.Text.StringBuilder
     [void]$sb.AppendLine('$script:ESC     = $__cspRun.Vars.ESC')
     [void]$sb.AppendLine('$script:UI      = $__cspRun.Vars.UI')
@@ -199,6 +337,18 @@ function Invoke-Task {
             [void]$ps.AddScript($body)
             $h = $ps.BeginInvoke()
 
+            # -- activity: the reserved bottom row shows a scanner and the
+            #    elapsed time for as long as the task actually runs. It sits
+            #    outside the scrolling region, so it cannot be overwritten by
+            #    the task's output and cannot bleed into it - which is what
+            #    an in-line indicator could never guarantee, especially
+            #    against tools like sfc that redraw with carriage returns.
+            $barSeq = @()
+            for ($i = 0; $i -lt 18; $i++) { $barSeq += $i }
+            for ($i = 16; $i -gt 0; $i--) { $barSeq += $i }
+            $fi = 0
+            Set-StatusBusy -Pos 0 -Ms 0
+
             $pollKeys = $true
             while (-not $h.IsCompleted) {
                 if ($pollKeys) {
@@ -212,7 +362,9 @@ function Invoke-Task {
                     } catch { $pollKeys = $false }
                 }
                 if ($cancelled) { break }
-                Start-Sleep -Milliseconds 80
+                $fi++
+                Set-StatusBusy -Pos $barSeq[$fi % $barSeq.Count] -Ms $sw.ElapsedMilliseconds
+                Start-Sleep -Milliseconds 110
             }
 
             if ($cancelled) {
@@ -273,6 +425,9 @@ function Invoke-Task {
     }
 
     $sw.Stop()
+    # The busy state belongs to the task; hand the row back the moment it ends
+    # so the bar can never be left frozen on "RUNNING".
+    Set-StatusIdle
     Write-Log ("TASK END: {0} ({1} ms, ok={2}, exit={3}, cancelled={4})" -f $Name, $sw.ElapsedMilliseconds, $ok, $exit, $cancelled)
     return [PSCustomObject]@{
         Name      = $Name
@@ -296,4 +451,6 @@ function Initialize-Environment {
     $script:Env = Get-EnvInfo
     if (-not $script:Env.Host) { $script:Env.Host = [System.Net.Dns]::GetHostName() }
     Write-Log "===== Cyberspell Toolkit v$($script:App.Version) started (Admin=$($script:Env.Admin), PS=$($script:Env.PSVer)) ====="
+    # Reserve the bottom row for the status line (no-op without ANSI).
+    $null = Enable-StatusBar
 }

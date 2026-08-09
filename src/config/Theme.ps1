@@ -45,10 +45,14 @@ $script:Glyph = @{
 # ---------------------------------------------------------------------
 function Paint {
     param(
-        [Parameter(Mandatory)][string]$Text,
+        # AllowEmptyString matters: a mandatory [string] rejects '' outright,
+        # which would throw from any caller that paints a computed or padded
+        # value that happens to be empty.
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
         [string]$Color = 'text',
         [switch]$Bold
     )
+    if ([string]::IsNullOrEmpty($Text)) { return '' }
     if (-not $script:UI.Ansi) { return $Text }
     $rgb = $script:Palette[$Color]
     if (-not $rgb) { $rgb = $script:Palette['text'] }
@@ -64,6 +68,94 @@ function Get-VisibleLength {
     return $stripped.Length
 }
 
+# =====================================================================
+#  SCREEN ENGINE
+#  A single row at the bottom of the window is reserved with a terminal
+#  scrolling region (DECSTBM). Everything the toolkit or a native tool
+#  prints scrolls ABOVE it, so the status line can never be overwritten
+#  and never bleeds into command output. All of it is pure ANSI, with no
+#  cursor-position queries, so it behaves the same on Windows Terminal,
+#  Cursor save/restore uses ESC 7 / ESC 8 (DECSC/DECRC) rather than
+#  CSI s / CSI u: the CSI pair is a non-standard SCO variant that several
+#  terminals ignore, which would strand the cursor on the reserved row and
+#  send every following line of output there.
+#  legacy conhost with VT enabled, and Unix terminals.
+#  If ANSI is unavailable the whole layer turns into no-ops and the UI
+#  falls back to printing an inline footer.
+# =====================================================================
+$script:Screen = @{
+    Enabled = $false
+    Rows    = 0
+    Cols    = 0
+    Keys    = ''          # remembered idle hint, so any caller can restore it
+}
+
+function Get-ScreenSize {
+    $r = 24; $c = 80
+    try { $r = [Console]::WindowHeight; $c = [Console]::WindowWidth } catch { }
+    if ($r -lt 1) { $r = 24 }
+    if ($c -lt 1) { $c = 80 }
+    return @{ Rows = $r; Cols = $c }
+}
+
+function Enable-StatusBar {
+    if (-not $script:UI.Ansi) { return $false }
+    $sz = Get-ScreenSize
+    if ($sz.Rows -lt 10) { return $false }      # too short to give a row away
+    $script:Screen.Rows = $sz.Rows
+    $script:Screen.Cols = $sz.Cols
+    $e = $script:ESC
+    # scrolling region = row 1 .. second-to-last row
+    Write-Host ($e + '[1;' + ($sz.Rows - 1) + 'r') -NoNewline
+    Write-Host ($e + '[H') -NoNewline
+    $script:Screen.Enabled = $true
+    return $true
+}
+
+function Disable-StatusBar {
+    if (-not $script:Screen.Enabled) { return }
+    $e = $script:ESC
+    $r = $script:Screen.Rows
+    # Clear the reserved row, release the region, and only THEN restore the
+    # cursor. Order matters: resetting the scrolling region homes the cursor
+    # to row 1 (DECSTBM does this by definition), so restoring first would be
+    # undone and everything printed afterwards - including the shell prompt
+    # we hand back to - would start at the top of the screen.
+    Write-Host ($e + '7' + $e + '[' + $r + ';1H' + $e + '[2K' + $e + '[r' + $e + '8') -NoNewline
+    $script:Screen.Enabled = $false
+}
+
+# Both arguments are already painted; visible width is measured with
+# Get-VisibleLength so ANSI codes do not break the padding.
+function Write-StatusBar {
+    param([string]$Left = '', [string]$Right = '')
+    if (-not $script:Screen.Enabled) { return }
+
+    # A resized window must not strand the bar on a row that no longer exists.
+    $sz = Get-ScreenSize
+    if ($sz.Rows -ne $script:Screen.Rows -or $sz.Cols -ne $script:Screen.Cols) {
+        $script:Screen.Rows = $sz.Rows
+        $script:Screen.Cols = $sz.Cols
+        if ($sz.Rows -lt 10) { Disable-StatusBar; return }
+        Write-Host ($script:ESC + '[1;' + ($sz.Rows - 1) + 'r') -NoNewline
+    }
+
+    $rows = $script:Screen.Rows
+    $cols = $script:Screen.Cols
+    $lv = Get-VisibleLength $Left
+    $rv = Get-VisibleLength $Right
+    # On a narrow window the key hints matter more than the branding, so the
+    # right-hand side is dropped first. Dropping rather than truncating keeps
+    # the line from wrapping, which would push the reserved row off-screen.
+    if (($cols - 2 - $lv - $rv) -lt 1) { $Right = ''; $rv = 0 }
+    if (($cols - 2 - $lv) -lt 1)       { $Left  = ''; $lv = 0 }
+    $gap = $cols - 2 - $lv - $rv
+    if ($gap -lt 1) { $gap = 1 }
+    $e = $script:ESC
+    $body = ' ' + $Left + (' ' * $gap) + $Right + ' '
+    Write-Host ($e + '7' + $e + '[' + $rows + ';1H' + $e + '[2K' + $body + $e + '8') -NoNewline
+}
+
 # ---------------------------------------------------------------------
 #  Show-Banner  --  framed cyberpunk header
 # ---------------------------------------------------------------------
@@ -75,7 +167,7 @@ function Show-Banner {
     $top = "$($g.tl)$([string]$g.h * $inner)$($g.tr)"
     $bot = "$($g.bl)$([string]$g.h * $inner)$($g.br)"
 
-    # Title line:  ' ⚡ C Y B E R S P E L L                 v0.1.1 '
+    # Title line:  ' <bolt> C Y B E R S P E L L                 v<version> '
     $bannerTitle = $script:App.Banner
     if (-not $bannerTitle) { $bannerTitle = $script:App.Name }
     $name    = ($bannerTitle.ToUpper().ToCharArray() -join ' ')

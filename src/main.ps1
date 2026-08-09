@@ -15,7 +15,7 @@ $script:App = @{
     Brand   = 'cyberspell'
     Author  = 'JP'
     Site    = 'https://jp.cyberspell.cloud'
-    Version = '0.1.1'
+    Version = '0.1.2'
     Repo    = 'https://github.com/cyberspell/cyberspell-toolkit'
 }
 
@@ -72,6 +72,13 @@ function Get-MenuTree {
 # ---- Entrypoint -----------------------------------------------------
 function Start-App {
     Initialize-Environment
-    $root = Get-MenuTree
-    Start-Menu -Root $root
+    try {
+        $root = Get-MenuTree
+        Start-Menu -Root $root
+    } finally {
+        # Always hand the terminal back exactly as we found it: clear the
+        # reserved row and release the scrolling region, even if something
+        # threw on the way out.
+        Disable-StatusBar
+    }
 }

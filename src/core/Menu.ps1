@@ -35,7 +35,8 @@ function Invoke-Action {
         Write-Host ""
         Write-Host (Paint "  Close this window, start PowerShell as Administrator," 'dim')
         Write-Host (Paint "  then load the toolkit again." 'dim')
-        Wait-AnyKey
+        Set-StatusIdle -Keys $script:StatusKeys.Action
+    Wait-AnyKey
         return
     }
 
@@ -52,21 +53,22 @@ function Invoke-Action {
         Show-ActionHeader $Node.Label
     }
 
-    if (Test-ActionCancellable $Node) {
-        Write-Host (Paint "  press [esc] at any time to stop this task and go back" 'dim')
-        Write-Host ""
-    }
 
     $r = Invoke-Task -Name $Node.Label -Action $Node.Action -Node $Node
+
+    # Quiet nodes are self-contained panes: they draw their own screen and
+    # handle their own exit, so a result line and a pause would be noise.
+    if ($Node.Quiet -and $r.Success -and -not $r.Cancelled) { return }
+
     Write-Host ""
     if ($r.Cancelled) {
-        Write-Host (Paint ("  [!] stopped by user after {0} ms" -f $r.Ms) 'warn' -Bold)
+        Write-Host (Paint ("  [!] stopped by user after {0}" -f (Format-Duration $r.Ms)) 'warn' -Bold)
     } elseif (-not $r.Success) {
         Write-Host (Paint "  [x] finished with errors (see message above)" 'err' -Bold)
     } elseif ($r.ExitCode -ne 0) {
-        Write-Host (Paint ("  [!] completed in {0} ms (exit code {1})" -f $r.Ms, $r.ExitCode) 'warn' -Bold)
+        Write-Host (Paint ("  [!] completed in {0} (exit code {1})" -f (Format-Duration $r.Ms), $r.ExitCode) 'warn' -Bold)
     } else {
-        Write-Host (Paint "  [ok] completed in $($r.Ms) ms" 'ok' -Bold)
+        Write-Host (Paint "  [ok] completed in $(Format-Duration $r.Ms)" 'ok' -Bold)
     }
     Wait-AnyKey
 }
@@ -126,6 +128,11 @@ function Start-Menu {
 #  Show-Goodbye
 # ---------------------------------------------------------------------
 function Show-Goodbye {
+    # Hand the terminal back BEFORE the farewell. With the reserved row
+    # released first, everything below is ordinary output and the shell
+    # prompt lands underneath it. Releasing it afterwards would home the
+    # cursor and the prompt would be drawn over these lines.
+    Disable-StatusBar
     Clear-Host
     Write-Host ""
     Write-Host ("  " + (Paint "$($script:Glyph.bolt) cyberspell toolkit " 'cyan' -Bold) + (Paint "// session closed" 'magenta'))

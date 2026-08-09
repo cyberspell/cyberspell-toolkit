@@ -5,7 +5,7 @@
  // endpoint troubleshooting toolkit
 ```
 
-![Version](https://img.shields.io/badge/version-0.1.1-00f0ff?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.1.2-00f0ff?style=flat-square)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%20%7C%207%2B-ff2da0?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Windows-00f0ff?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-ff2da0?style=flat-square)
@@ -16,7 +16,7 @@ already run by hand into a clean, categorized, keyboard-driven menu.
 
 Windows is the focus today. Linux and macOS branches are stubbed in and planned.
 
-> **Status:** v0.1.1 — first public release. Engine, theming, and eleven Windows categories;
+> **Status:** v0.1.2. Engine, theming, and twelve Windows categories;
 > live at `irm https://cyberspell.cloud/toolkit | iex`.
 
 ---
@@ -85,7 +85,8 @@ home
 │   │                            submenu (flush DNS, DHCP renew, TCP/IP & winsock reset)
 │   ├── System & performance    · summary, top CPU/memory, startup programs, uptime,
 │   │                            pending reboot, system errors, BSOD history, kill process
-│   ├── Disk & storage          · drive space, SMART, TRIM, largest folders, CHKDSK, cleanup
+│   ├── Disk & storage          · user/system TEMP cleanup, drive space, SMART, TRIM,
+│   │                            largest folders, CHKDSK, disk cleanup
 │   ├── Windows Update          · service status, recent updates, WU component reset
 │   ├── System repair           · SFC verify/repair, DISM check/scan/restore,
 │   │                            component cleanup, restore points
@@ -95,7 +96,9 @@ home
 │   ├── Apps & Office           · installed apps, Outlook OST/profiles/scanpst/navpane,
 │   │                            Office quick repair, OneDrive reset, Teams cache clear
 │   ├── Enterprise & identity   · dsregcmd join/PRT status, DC & secure channel, GPO,
-│   │                            Kerberos, time sync, Intune sync & MDM diagnostics
+│   │                            time sync, Intune sync & MDM diagnostics
+│   ├── Command cheat sheet     · 407 Windows commands in 20 groups — fuzzy finder pane,
+│   │                            enter copies to clipboard, browse grouped when idle
 │   └── Quick launch            · 20 consoles & tools, each with field tips (Event IDs,
 │   │                            hidden-device tricks, wait-chain analysis, ...)
 ├── Linux — planned
@@ -104,9 +107,17 @@ home
 ```
 
 Navigation: number/letter keys select an item; **[B]** back, **[R]** refresh, **[Q]** quit.
-While a task is running, **[ESC]** (or **X**) stops it and returns to the menu — long
-operations like SFC, DISM, or folder scans no longer hold you hostage. (Tasks that
-prompt for input run uninterrupted so your typing is never stolen.)
+The bottom row of the window is a permanent status line. It always shows the keys that
+work on the current screen, and while a task runs it becomes a neon scanner with elapsed
+time and a stop hint. The row is reserved with a terminal scrolling region, so output
+physically cannot overwrite it and it cannot bleed into command output.
+
+Confirmations are a Yes/No selector with **Yes** highlighted: arrows move, `Enter`
+accepts, or press `y`/`n` to decide instantly.
+
+While a task is running, **[ESC]** (or **X**) stops it and returns to the menu — long operations like SFC,
+DISM, or folder scans no longer hold you hostage. (Tasks that prompt for input run
+uninterrupted so your typing is never stolen.)
 (Those three letters are reserved, so selectable items are keyed `1`–`9` then `A`–`Z`
 skipping `B`, `Q`, `R`.)
 
@@ -127,7 +138,8 @@ src/
 ├── core/Utils.ps1            # env detection, admin check, logging, safe task runner
 ├── core/UI.ps1               # key input, menu rendering, status/breadcrumb/footer
 ├── core/Menu.ps1             # key mapping + the navigation loop
-├── modules/windows/Windows.ps1   # the Windows category tree
+├── modules/windows/Windows.ps1     # the Windows category tree
+├── modules/windows/CheatSheet.ps1  # searchable command reference (data + engine)
 └── main.ps1                  # app metadata, About, root tree, Start-App entrypoint
 build/Compile.ps1             # concatenates the above → dist/toolkit.ps1
 docs/CHANGELOG.md             # version history

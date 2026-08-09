@@ -12,6 +12,7 @@ $loadOrder = @(
     'src\core\UI.ps1',
     'src\core\Menu.ps1',
     'src\modules\windows\Windows.ps1',
+    'src\modules\windows\CheatSheet.ps1',
     'src\main.ps1'
 )
 
